@@ -1,3 +1,5 @@
+⚠️ Note on this Fork: This fork adds support for Raspberry Pi 5 (OS Bookworm) by implementing libgpiod control for PN7160 pins, following the [official NXP guide](https://community.nxp.com/t5/NFC-Knowledge-Base/Porting-PN7160-NCI2-stack-to-Raspberry-Pi-5-OS-Bookworm/ta-p/1977521). The original repository uses deprecated sysfs which fails on modern Linux kernels (6.6+).
+
 linux_libnfc-nci
 ================
 
