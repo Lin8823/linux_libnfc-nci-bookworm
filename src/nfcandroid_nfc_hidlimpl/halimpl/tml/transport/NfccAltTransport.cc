@@ -32,6 +32,10 @@
 #include <string.h>
 #include "phNxpNciHal_utils.h"
 
+//NXP Test new Raspberry pi os
+#include <gpiod.h>
+//NXP End Test new Raspberry pi os
+
 #define CRC_LEN 2
 #define NORMAL_MODE_HEADER_LEN 3
 #define FW_DNLD_HEADER_LEN 2
@@ -40,6 +44,14 @@
 #define FRAGMENTSIZE_MAX PHNFC_I2C_FRAGMENT_SIZE
 extern phTmlNfc_i2cfragmentation_t fragmentation_enabled;
 extern phTmlNfc_Context_t* gpphTmlNfc_Context;
+
+//NXP Test new Raspberry pi os
+const char *chipname = "gpiochip4";
+struct gpiod_chip *chip;
+struct gpiod_line *VEN_line;
+struct gpiod_line *IRQ_line;
+struct gpiod_line *FWDNLD_line;
+//NXP End Test new Raspberry pi os
 
 NfccAltTransport::NfccAltTransport() {
   iEnableFd = 0;
@@ -391,30 +403,50 @@ int NfccAltTransport::verifyPin(int pin, int isoutput, int edge) {
   return (0);
 }
 void NfccAltTransport::gpio_set_ven(int value) {
-  if (iEnableFd > 0) {
+  //NXP Test new Raspberry pi os
+  if (value == 0) {
+    gpiod_line_set_value(VEN_line, 0);
+  } else {
+    gpiod_line_set_value(VEN_line, 1);
+  }
+  usleep(10 * 1000);
+  //NXP End Test new Raspberry pi os
+  /*if (iEnableFd > 0) {
     if (value == 0) {
       write(iEnableFd, "0", 1);
     } else {
       write(iEnableFd, "1", 1);
     }
-    usleep(10 * 1000);
-  }
+  usleep(10 * 1000);
+  }*/
 }
 
 void NfccAltTransport::gpio_set_fwdl(int value) {
-  if (iFwDnldFd > 0) {
+  //NXP Test new Raspberry pi os
+  if (value == 0) {
+    gpiod_line_set_value(FWDNLD_line, 0);
+  } else {
+    gpiod_line_set_value(FWDNLD_line, 1);
+  }
+  usleep(10 * 1000);
+  //NXP End Test new Raspberry pi os
+  /*if (iFwDnldFd > 0) {
     if (value == 0) {
       write(iFwDnldFd, "0", 1);
     } else {
       write(iFwDnldFd, "1", 1);
     }
     usleep(10 * 1000);
-  }
+  }*/
 }
 
 void NfccAltTransport::wait4interrupt(void) {
+  //NXP Test new Raspberry pi os
+  while(gpiod_line_get_value(IRQ_line) != 1){};
+  //NXP End Test new Raspberry pi os
+
   /* Open STREAMS device. */
-  struct pollfd fds[1];
+  /*struct pollfd fds[1];
   fds[0].fd = iInterruptFd;
   fds[0].events = POLLPRI;
   int timeout_msecs = -1;  // 100000;
@@ -426,7 +458,7 @@ void NfccAltTransport::wait4interrupt(void) {
     if (ret != 1) {
       NXPLOG_TML_D("wait4interrupt() %d - %s, ", ret, strerror(errno));
     }
-  }
+  }*/
 }
 
 /*****************************************************************************
@@ -441,12 +473,31 @@ void NfccAltTransport::wait4interrupt(void) {
    ****************************************************************************/
 int NfccAltTransport::ConfigurePin()
 {
+  //NXP Test new Raspberry pi os
+  chip = gpiod_chip_open_by_name(chipname);
+  if(chip == NULL)
+  {
+    chip = gpiod_chip_open_by_name("gpiochip0");
+    if(chip == NULL)
+    {
+     return -1;
+    }
+  }
+  VEN_line = gpiod_chip_get_line(chip, PIN_ENABLE);
+  IRQ_line = gpiod_chip_get_line(chip, PIN_INT);
+  FWDNLD_line = gpiod_chip_get_line(chip, PIN_FWDNLD);
+
+  gpiod_line_request_output(VEN_line, "VEN pin", 1);
+  gpiod_line_request_output(FWDNLD_line, "FWDNLD pin", 1);
+  gpiod_line_request_input(IRQ_line, "IRD pin");
+  return NFCSTATUS_SUCCESS;
+  //NXP End Test new Raspberry pi os
   // Assign IO pins
-  iInterruptFd = verifyPin(PIN_INT, 0, EDGE_RISING);
+  /*iInterruptFd = verifyPin(PIN_INT, 0, EDGE_RISING);
   if (iInterruptFd < 0) return (NFCSTATUS_INVALID_DEVICE);
   iEnableFd = verifyPin(PIN_ENABLE, 1, EDGE_NONE);
   if (iEnableFd < 0) return (NFCSTATUS_INVALID_DEVICE);
   iFwDnldFd = verifyPin(PIN_FWDNLD, 1, EDGE_NONE);
   if (iFwDnldFd < 0) return (NFCSTATUS_INVALID_DEVICE);
-  return NFCSTATUS_SUCCESS;
+  return NFCSTATUS_SUCCESS;*/
 }
